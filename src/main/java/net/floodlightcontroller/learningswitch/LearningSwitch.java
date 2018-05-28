@@ -255,6 +255,7 @@ public class LearningSwitch
     private SaraProtocol mySara = new SaraProtocol();
 
     private void doFlood(IOFSwitch sw, OFPacketIn pi, FloodlightContext cntx) {
+        System.out.println("In doFlood");
         OFPort inPort = OFMessageUtils.getInPort(pi);
         OFPacketOut.Builder pob = sw.getOFFactory().buildPacketOut();
         // Don't put any action in this list if you want packet drops or just return doFlood
@@ -265,10 +266,21 @@ public class LearningSwitch
         if ( ! mySara.haveEntryFor(currentSwitchId) && SaraProtocolUtils.ICareAbout(cntx)) {
             log.info("get packet on switch : {}", sw.getId());
 
+            System.out.print("State: ");
+            System.out.print(myProtocolState);
+            System.out.print(" - ");
+            System.out.println(currentSwitchId);
+            mySara.printLearned();
+
             switch (myProtocolState) {
                 case BROADCAST:
                     for (OFPortDesc p : sw.getPorts()) {
-                        if (p.equals(inPort)) continue;
+                        Match m = createMatchFromPacket(sw, inPort, cntx);
+                        MacAddress sourceMac = m.get(MatchField.ETH_SRC);
+                        MacAddress destMac = m.get(MatchField.ETH_DST);
+                        VlanVid vlan = m.get(MatchField.VLAN_VID) == null ? VlanVid.ZERO : m.get(MatchField.VLAN_VID).getVlanVid();
+                        addToPortMap(sw, destMac, VlanVid.ofVlan(16), p.getPortNo());
+                        if (p.getPortNo().equals(inPort)) continue;
                         actions.add(sw.getOFFactory().actions().output(p.getPortNo(), Integer.MAX_VALUE));
                         // todo mark ports
                     }
@@ -276,6 +288,8 @@ public class LearningSwitch
                     mySara.makeEntryFor(currentSwitchId);
                     myProtocolState = SaraProtocolUtils.SaraProtocolState.GET_RESPOND;
                     myProtocolState.stayInGetRespondFor(sw.getPorts().size() - 1);
+                    System.out.print("sw.getPorts().size - 1 = ");
+                    System.out.println(sw.getPorts().size() - 1);
                     break;
                 case GET_RESPOND:
                     mySara.learnLinkForCurrentSwitch(sw.getId().getLong(),inPort,3);
@@ -473,7 +487,7 @@ public class LearningSwitch
 
     /**
      * Processes a OFPacketIn message. If the switch has learned the MAC/VLAN to port mapping
-     * for the pair it will write a FlowMod for. If the mapping has not been learned the
+     * for the pair it will write a FlowMod for. If the mapping has not been learned then
      * we will flood the packet.
      * @param sw
      * @param pi

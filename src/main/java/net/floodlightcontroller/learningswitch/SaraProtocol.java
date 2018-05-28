@@ -11,8 +11,7 @@ public class SaraProtocol {
     private long currentSwitch;
 
     public boolean haveEntryFor(long id) {
-        // todo
-        return false;
+        return waitingRoom.containsKey(id);
     }
 
     public void setCurrentSwitch(long currentSwitch) {
@@ -23,6 +22,34 @@ public class SaraProtocol {
     public void makeEntryFor(long currentSwitchId) {
         waitingRoom.put(currentSwitchId,new HashSet<>());
         // todo
+    }
+
+    public void printLearned() {
+        System.out.print("Current Switch: ");
+        System.out.println(currentSwitch);
+        System.out.print("Learned: ");
+        for (InEntry curr : learned.keySet()) {
+            System.out.print(curr.getSw());
+            System.out.print(" - ");
+            System.out.print(curr.getPort());
+            System.out.print(" || ");
+            System.out.print(learned.get(curr).getSw());
+            System.out.print(" - ");
+            System.out.println(learned.get(curr).getPort());
+        }
+        System.out.println();
+        System.out.print("WaitingRoom: ");
+        for (Long curr : waitingRoom.keySet()) {
+            System.out.print(curr);
+            System.out.print(" || ");
+            for (OutEntry c : waitingRoom.get(curr)) {
+                System.out.print(c.getSw());
+                System.out.print(" - ");
+                System.out.print(c.getPort());
+                System.out.print(" || ");
+            }
+            System.out.println();
+        }
     }
 
     private class Entry {
@@ -66,6 +93,8 @@ public class SaraProtocol {
     }
 
     public void learnLinkForCurrentSwitch(long sw, OFPort inPort, long value) {
+        System.out.print("Switch in learnLinkForCurrentSwitch: ");
+        System.out.println(sw);
         if (learned.containsKey(new InEntry(sw, inPort,value)))
             return;
         else if (waitingRoom.containsKey(sw)) {
@@ -73,13 +102,14 @@ public class SaraProtocol {
                 if(current.getSw() == currentSwitch){
                     learned.put(new InEntry(sw,inPort,value),current);
                     learned.put(new InEntry(current,value),new OutEntry(sw,inPort,value));
+                    return;
                 }
             }
-            waitingRoom.get(sw).add(new OutEntry(sw, inPort,value));
+            waitingRoom.get(currentSwitch).add(new OutEntry(sw, inPort,value));
         }else {
-            Set<OutEntry> temp = new HashSet<>();
-            temp.add(new OutEntry(sw, inPort,value));
-            waitingRoom.put(currentSwitch,temp);
+           // Set<OutEntry> temp = new HashSet<>();
+           // temp.add(new OutEntry(sw, inPort,value));
+            waitingRoom.get(currentSwitch).add(new OutEntry(sw, inPort,value));
         }
     }
 
