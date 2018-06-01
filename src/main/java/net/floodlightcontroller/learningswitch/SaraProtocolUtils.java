@@ -20,15 +20,17 @@ public interface SaraProtocolUtils {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ip = (IPv4) eth.getPayload();
-            return ip.getProtocol() == IpProtocol.ICMP;
+//            return ip.getProtocol() == IpProtocol.ICMP;
+            return false;
         } else return eth.getEtherType() == EthType.ARP;
     }
 
-    long TIME_OUT = 10;
+    long TIME_OUT = 100;
 
     enum SaraProtocolState {
         BROADCAST,
-        GET_RESPOND;
+        GET_RESPOND,
+        ROUTE;
         private int stayInGetRespond = 0;
 
         public void stayInGetRespondFor(int n) {
@@ -40,7 +42,7 @@ public interface SaraProtocolUtils {
         public SaraProtocolState nextState() {
             stayInGetRespond--;
             if (stayInGetRespond <= 0)
-                return BROADCAST;
+                return ROUTE;
             return GET_RESPOND;
         }
     }
