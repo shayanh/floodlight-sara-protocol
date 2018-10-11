@@ -301,7 +301,7 @@ public class LearningSwitch
                     }
                 case ROUTE:
                     try {
-                         long nxtId = mySara.extractMin();
+                        long nxtId = mySara.extractMin();
                         nxt = iofSwitchService.getSwitch(DatapathId.of(nxtId));
                         System.out.println("nxt.id = " + nxt.getId().getLong());
                         sendRoute = true;
